@@ -27,8 +27,9 @@ global maxRange
 myFile = 'Datasets - NGAN.xlsx'
 #your kml file name goes below
 myKML = 'targets.kml'
-#spaFiles_BS = ['Big South Spatial 1- Blue .csv','Big South Spatial 2- Blue .csv','Big South Spatial 3- Blue .csv','Big South Spatial 4- Blue .csv', 'Atlanta Spatial 1 - Blue.csv','Atlanta Spatial 2 - Blue.csv','Atlanta Spatial 3- Blue.csv']
-#conFiles_BS = ['Big South Continuity 1 - Red.csv','Big South Continuity 2 - Red.csv','Big South Continuity 3 - Red.csv','Big South Continuity 4 - Red.csv','Big South Continuity 5 - Red.csv','Big South Continuity 6 - Red.csv','Big South Continuity 7 - Red.csv','Big South Continuity 8 - Red.csv']
+
+spaFiles_BS = ['Big South Spatial 1- Blue .csv','Big South Spatial 2- Blue .csv','Big South Spatial 3- Blue .csv','Big South Spatial 4- Blue .csv', 'Atlanta Spatial 1 - Blue.csv','Atlanta Spatial 2 - Blue.csv','Atlanta Spatial 3- Blue.csv']
+conFiles_BS = ['Big South Continuity 1 - Red.csv','Big South Continuity 2 - Red.csv','Big South Continuity 3 - Red.csv','Big South Continuity 4 - Red.csv','Big South Continuity 5 - Red.csv','Big South Continuity 6 - Red.csv','Big South Continuity 7 - Red.csv','Big South Continuity 8 - Red.csv']
 spaFiles_KS = ['Keystone Spatial 1 - Blue.csv','Keystone Spatial 2 - Blue.csv']
 conFiles_KS = ['Keystone Continuity 1 - Red v2.xlsx','Keystone Continuity 2 - Red v2.xlsx']
 spaFiles_TW = ['Twin Cities Spatial 1 - Blue.csv','Twin Cities Spatial  2- Blue.csv','Twin Cities KS MO Spacial - Blue.csv']
@@ -446,7 +447,7 @@ def parseKML():
                 inputCSV.at[minId[i],'New Long'] = pM_Long[i]
             
     
-    #create cluster blocks using shapes
+    #records clusters using shapes
     sMembers = []
     for s in range(len(shapes)):
         sMembers.append([])
@@ -493,7 +494,7 @@ def parseKML():
         if len(sMembers[s]) == 0:
             print("Caution, no points found inside polygon near coordinates %f, %f" % (shapes[s][0][0],shapes[s][1][0]))
     
-    #creates clusters datasheet for each shape
+    #creates clusters datasheet from shapes
     clusterDB = pd.DataFrame(columns = ['Spatial ID','SUPPORT_ARUG','Address','City','State','Zip','Region','Division','Latitude - Spatial','Longitude - Spatial','Continuity PS Name','Mac Address','Latitude- Con','Longitude - Con','Adj - lat','Adj - Long'])
     for shape in sMembers:
         #not in continuity
