@@ -30,13 +30,15 @@ myKML = 'targets.kml'
 
 #spaFiles_BS = ['Big South Spatial 1- Blue .csv','Big South Spatial 2- Blue .csv','Big South Spatial 3- Blue .csv','Big South Spatial 4- Blue .csv', 'Atlanta Spatial 1 - Blue.csv','Atlanta Spatial 2 - Blue.csv','Atlanta Spatial 3- Blue.csv']
 #conFiles_BS = ['Big South Continuity 1 - Red.csv','Big South Continuity 2 - Red.csv','Big South Continuity 3 - Red.csv','Big South Continuity 4 - Red.csv','Big South Continuity 5 - Red.csv','Big South Continuity 6 - Red.csv','Big South Continuity 7 - Red.csv','Big South Continuity 8 - Red.csv']
-spaFiles_KS = ['Keystone Spatial 1 - Blue.csv','Keystone Spatial 2 - Blue.csv']
-conFiles_KS = ['Keystone Continuity 1 - Red v2.xlsx','Keystone Continuity 2 - Red v2.xlsx']
-spaFiles_TW = ['Twin Cities Spatial 1 - Blue.csv','Twin Cities Spatial  2- Blue.csv','Twin Cities KS MO Spacial - Blue.csv']
-conFiles_TW = ['Twin Cities Continuity - Red.xlsx','Twin Cities Continuity - Red 2.xlsx']
+#spaFiles_KS = ['Keystone Spatial 1 - Blue.csv','Keystone Spatial 2 - Blue.csv']
+#conFiles_KS = ['Keystone Continuity 1 - Red v2.xlsx','Keystone Continuity 2 - Red v2.xlsx']
+#spaFiles_TW = ['Twin Cities Spatial 1 - Blue.csv','Twin Cities Spatial  2- Blue.csv','Twin Cities KS MO Spacial - Blue.csv']
+#conFiles_TW = ['Twin Cities Continuity - Red.xlsx','Twin Cities Continuity - Red 2.xlsx']
+spaFiles_MW = ['MtnWest Spatial 1 - Blue.csv','MtnWest Spatial 2 - Blue.csv','MtnWest Spatial 3 - Blue.csv','MtnWest Spatial 4 - Blue.csv']
+conFiles_MW = ['MtnWest Continuity 1 - Red.xlsx','MtnWest Continuity 2 - Red.xlsx','MtnWest Continuity 3 - Red.xlsx','MtnWest Continuity 4 - Red.xlsx']
 
-spaFiles = spaFiles_KS+spaFiles_TW
-conFiles = conFiles_KS+conFiles_TW
+spaFiles = spaFiles_MW
+conFiles = spaFiles_MW
 
 myDB =  pd.read_excel(myFile, converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'Continuity PS Name':str,'Mac Address':str,'Good Latitude':float,'Good Longitude':float,'Status':str,'Comment':str})
 
@@ -385,9 +387,11 @@ def parseKML():
     l = 0
     while l < len(targetsL):
         if '<LinearRing>' in targetsL[l]:
-            shapes.append([[],[]])
             l+=2
             line = targetsL[l]
+            if '<' in line:
+                continue
+            shapes.append([[],[]])
             cordinates = line.split(' \n')[0]
             cordinates = cordinates.split('\t')
             cordinates = cordinates[len(cordinates)-1].split(' ')
