@@ -38,7 +38,7 @@ spaFiles_MW = ['MtnWest Spatial 1 - Blue.csv','MtnWest Spatial 2 - Blue.csv','Mt
 conFiles_MW = ['MtnWest Continuity 1 - Red.xlsx','MtnWest Continuity 2 - Red.xlsx','MtnWest Continuity 3 - Red.xlsx','MtnWest Continuity 4 - Red.xlsx']
 
 spaFiles = spaFiles_MW
-conFiles = spaFiles_MW
+conFiles = conFiles_MW
 
 myDB =  pd.read_excel(myFile, converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'Continuity PS Name':str,'Mac Address':str,'Good Latitude':float,'Good Longitude':float,'Status':str,'Comment':str})
 
