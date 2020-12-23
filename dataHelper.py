@@ -499,7 +499,8 @@ def parseKML():
             print("Caution, no points found inside polygon near coordinates %f, %f" % (shapes[s][0][0],shapes[s][1][0]))
     
     #creates clusters datasheet from shapes
-    clusterDB = pd.DataFrame(columns = ['Spatial ID','SUPPORT_ARUG','Address','City','State','Zip','Region','Division','Latitude - Spatial','Longitude - Spatial','Continuity PS Name','Mac Address','Latitude- Con','Longitude - Con','Adj - lat','Adj - Long'])
+    clusterDB = pd.DataFrame(columns = ['PS_NETWORK_KEY-Spatial','POWER_SUPPLY_NAME','Continuity PS Name','Mac Address','Region','Division','Latitude','Longitude'])
+    
     for shape in sMembers:
         #not in continuity
         if len(shape) == 0:
@@ -575,58 +576,33 @@ def parseKML():
                         break
     
         for mem in shape:
+            spa_Name = ''
             spa_ID = ''
-            spa_Type = ''
-            address = ''
-            city = ''
-            state = ''
-            zipcode = ''
-            spa_Lat = np.nan
-            spa_Long = np.nan
             con_Name = ''
             con_Mac = ''
-            con_Type = ''
-            con_Lat = np.nan
-            con_Long = np.nan
-            adj_Lat = np.nan
-            adj_Long = np.nan
+            ps_Lat = np.nan
+            ps_Long = np.nan
+    
     
             if mem[0] == 0:
                 if 'PS_NETWORK_KEY-Spatial' in spaDB[mem[2]].columns:
                     spa_ID = spaDB[mem[2]].at[mem[1],'PS_NETWORK_KEY-Spatial']
                 elif 'ID' in spaDB[mem[2]].columns:
                     spa_ID = spaDB[mem[2]].at[mem[1],'ID']
-    
-                if 'SUPPORT_ARUG' in spaDB[mem[2]].columns:
-                    spa_Type = spaDB[mem[2]].at[mem[1],'SUPPORT_ARUG']
-    
-                address = spaDB[mem[2]].at[mem[1],'ADDRESS']
-                city = spaDB[mem[2]].at[mem[1],'CITY']
-                state = spaDB[mem[2]].at[mem[1],'STATE']
-                zipcode = spaDB[mem[2]].at[mem[1],'ZIP']
-                spa_Lat = spaDB[mem[2]].at[mem[1],'LATITUDE']
-                spa_Long = spaDB[mem[2]].at[mem[1],'LONGITUDE']
+                    
+                spa_Name = spaDB[mem[2]].at[mem[1],'POWER_SUPPLY_NAME']
+                ps_Lat = spaDB[mem[2]].at[mem[1],'LATITUDE']
+                ps_Long = spaDB[mem[2]].at[mem[1],'LONGITUDE']
             else:
                 con_Name = conDB[mem[2]].at[mem[1],'Power Supply Name']
                 con_Mac = conDB[mem[2]].at[mem[1],'MAC Address']
+                ps_Lat = conDB[mem[2]].at[mem[1],'Latitude']
+                ps_Long = conDB[mem[2]].at[mem[1],'Longitude']
     
-                if 'Aerial / Underground' in conDB[mem[2]].columns:
-                    con_Type = conDB[mem[2]].at[mem[1],'Aerial / Underground']
-                if 'Aerial/Underground' in conDB[mem[2]].columns:
-                    con_Type = conDB[mem[2]].at[mem[1],'Aerial/Underground']
-                if 'Meter Number' in conDB[mem[2]].columns:
-                    con_Type = conDB[mem[2]].at[mem[1],'Meter Number']
-                if 'Type' in conDB[mem[2]].columns:
-                    con_Type = conDB[mem[2]].at[mem[1],'Type']
-    
-                address = conDB[mem[2]].at[mem[1],'Street Address']
-                con_Lat = conDB[mem[2]].at[mem[1],'Latitude']
-                con_Long = conDB[mem[2]].at[mem[1],'Longitude']
-    
-            new_row = {'Spatial ID':spa_ID,'SUPPORT_ARUG':spa_Type,'Address':address,'City':city,'State':state,'Zip':zipcode,'Region':region,'Division':division,'Latitude - Spatial':spa_Lat,'Longitude - Spatial':spa_Long,'Continuity PS Name':con_Name,'Mac Address':con_Mac,'Latitude- Con':con_Lat,'Longitude - Con':con_Long,'Adj - lat':adj_Lat,'Adj - Long':adj_Long}
+            new_row = {'PS_NETWORK_KEY-Spatial':spa_ID,'POWER_SUPPLY_NAME':spa_Name,'Continuity PS Name':con_Name,'Mac Address':con_Mac,'Region':region,'Division':division,'Latitude':ps_Lat,'Longitude':ps_Long}
             clusterDB = clusterDB.append(new_row, ignore_index=True)
     
-        new_row = {'Spatial ID':'','SUPPORT_ARUG':'','Address':'','City':'','State':'','Zip':'','Region':'','Division':'','Latitude - Spatial':np.nan,'Longitude - Spatial':np.nan,'Continuity PS Name':'','Mac Address':'','Latitude- Con':np.nan,'Longitude - Con':np.nan,'Adj - lat':np.nan,'Adj - Long':np.nan}
+        new_row = {'PS_NETWORK_KEY-Spatial':'','POWER_SUPPLY_NAME':'','Continuity PS Name':'','Mac Address':'','Region':'','Division':'','Latitude':np.nan,'Longitude':np.nan}
         clusterDB = clusterDB.append(new_row, ignore_index=True)
     
     clusterDB.to_excel('clusters.xlsx',index=False)
