@@ -194,7 +194,7 @@ def locateFromLocal():
             
             for m in locID:
                 found+=1
-                if abs(math.sqrt(pairsR[i].at[m,'Distance^2']) - math.sqrt(dists[p])) < 0.001:
+                if abs(math.sqrt(pairsR[i].at[m,'Distance^2']) - math.sqrt(dists[p])) < 0.0001:
                     equalDist+=1
                     
             if equalDist>1:
@@ -218,7 +218,7 @@ def locateFromLocal():
             
             for m in locID:
                 found+=1
-                if abs(math.sqrt(pairsB[i].at[m,'Distance^2']) - math.sqrt(dists[p])) < 0.001:
+                if abs(math.sqrt(pairsB[i].at[m,'Distance^2']) - math.sqrt(dists[p])) < 0.0001:
                     equalDist+=1
                     
             if equalDist>1:
