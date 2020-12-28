@@ -12,55 +12,56 @@ import pandas as pd
 import numpy as np
 import math
 
-global myFile
-global myKML
-global spaFiles
-global conFiles
-global myDB
-global spaDB
-global conDB
-global KeepInput
-global maxRange
-
-#Settings
-#your dataset file name goes below
-myFile = 'Datasets - NGAN.xlsx'
-#your kml file name goes below
-myKML = 'targets.kml'
-
-#spaFiles_BS = ['Big South Spatial 1- Blue .csv','Big South Spatial 2- Blue .csv','Big South Spatial 3- Blue .csv','Big South Spatial 4- Blue .csv', 'Atlanta Spatial 1 - Blue.csv','Atlanta Spatial 2 - Blue.csv','Atlanta Spatial 3- Blue.csv']
-#conFiles_BS = ['Big South Continuity 1 - Red.csv','Big South Continuity 2 - Red.csv','Big South Continuity 3 - Red.csv','Big South Continuity 4 - Red.csv','Big South Continuity 5 - Red.csv','Big South Continuity 6 - Red.csv','Big South Continuity 7 - Red.csv','Big South Continuity 8 - Red.csv']
-#spaFiles_KS = ['Keystone Spatial 1 - Blue.csv','Keystone Spatial 2 - Blue.csv']
-#conFiles_KS = ['Keystone Continuity 1 - Red v2.xlsx','Keystone Continuity 2 - Red v2.xlsx']
-#spaFiles_TW = ['Twin Cities Spatial 1 - Blue.csv','Twin Cities Spatial  2- Blue.csv','Twin Cities KS MO Spacial - Blue.csv']
-#conFiles_TW = ['Twin Cities Continuity - Red.xlsx','Twin Cities Continuity - Red 2.xlsx']
-spaFiles_MW = ['MtnWest Spatial 1 - Blue.csv','MtnWest Spatial 2 - Blue.csv','MtnWest Spatial 3 - Blue.csv','MtnWest Spatial 4 - Blue.csv']
-conFiles_MW = ['MtnWest Continuity 1 - Red.xlsx','MtnWest Continuity 2 - Red.xlsx','MtnWest Continuity 3 - Red.xlsx','MtnWest Continuity 4 - Red.xlsx']
-
-spaFiles = spaFiles_MW
-conFiles = conFiles_MW
-
-myDB =  pd.read_excel(myFile, converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'Continuity PS Name':str,'Mac Address':str,'Good Latitude':float,'Good Longitude':float,'Status':str,'Comment':str})
-
-spaDB = [None]*len(spaFiles)
-for s in range(len(spaFiles)):
-    if spaFiles[s][len(spaFiles[s])-1] == 'v':
-        spaDB[s] = pd.read_csv(spaFiles[s], converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'SUPPORT_ARUG':str,'ADDRESS':str,'LATITUDE':float,'LONGITUDE':float})
-    if spaFiles[s][len(spaFiles[s])-1] == 'x':
-        spaDB[s] = pd.read_excel(spaFiles[s], converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'SUPPORT_ARUG':str,'ADDRESS':str,'LATITUDE':float,'LONGITUDE':float})
-
-conDB = [None]*len(conFiles)
-for c in range(len(conFiles)):
-    if conFiles[c][len(conFiles[c])-1] == 'v':
-        conDB[c] = pd.read_csv(conFiles[c], converters={'Power Supply Name':str,'MAC Address':str,'Street Address':str,'Type':str,'Latitude':float,'Longitude':float})
-    if conFiles[c][len(conFiles[c])-1] == 'x':
-        conDB[c] = pd.read_excel(conFiles[c], converters={'Power Supply Name':str,'MAC Address':str,'Street Address':str,'Type':str,'Latitude':float,'Longitude':float})
-
-KeepInput = 0
-
-maxRange = 0.00025285
-
-
+def initializeHelper():
+    global myFile
+    global myKML
+    global spaFiles
+    global conFiles
+    global myDB
+    global spaDB
+    global conDB
+    global KeepInput
+    global maxRange
+    
+    #Settings
+    
+    #your dataset file name goes below
+    myFile = 'Datasets - NGAN.xlsx'
+    #your kml file name goes below
+    myKML = 'targets.kml'
+    
+    #spaFiles_BS = ['Big South Spatial 1- Blue .csv','Big South Spatial 2- Blue .csv','Big South Spatial 3- Blue .csv','Big South Spatial 4- Blue .csv', 'Atlanta Spatial 1 - Blue.csv','Atlanta Spatial 2 - Blue.csv','Atlanta Spatial 3- Blue.csv']
+    #conFiles_BS = ['Big South Continuity 1 - Red.csv','Big South Continuity 2 - Red.csv','Big South Continuity 3 - Red.csv','Big South Continuity 4 - Red.csv','Big South Continuity 5 - Red.csv','Big South Continuity 6 - Red.csv','Big South Continuity 7 - Red.csv','Big South Continuity 8 - Red.csv']
+    #spaFiles_KS = ['Keystone Spatial 1 - Blue.csv','Keystone Spatial 2 - Blue.csv']
+    #conFiles_KS = ['Keystone Continuity 1 - Red v2.xlsx','Keystone Continuity 2 - Red v2.xlsx']
+    #spaFiles_TW = ['Twin Cities Spatial 1 - Blue.csv','Twin Cities Spatial  2- Blue.csv','Twin Cities KS MO Spacial - Blue.csv']
+    #conFiles_TW = ['Twin Cities Continuity - Red.xlsx','Twin Cities Continuity - Red 2.xlsx']
+    spaFiles_MW = ['MtnWest Spatial 1 - Blue.csv','MtnWest Spatial 2 - Blue.csv','MtnWest Spatial 3 - Blue.csv','MtnWest Spatial 4 - Blue.csv']
+    conFiles_MW = ['MtnWest Continuity 1 - Red.xlsx','MtnWest Continuity 2 - Red.xlsx','MtnWest Continuity 3 - Red.xlsx','MtnWest Continuity 4 - Red.xlsx']
+    
+    spaFiles = spaFiles_MW
+    conFiles = conFiles_MW
+    
+    myDB =  pd.read_excel(myFile, converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'Continuity PS Name':str,'Mac Address':str,'Good Latitude':float,'Good Longitude':float,'Status':str,'Comment':str})
+    
+    spaDB = [None]*len(spaFiles)
+    for s in range(len(spaFiles)):
+        if spaFiles[s][len(spaFiles[s])-1] == 'v':
+            spaDB[s] = pd.read_csv(spaFiles[s], converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'SUPPORT_ARUG':str,'ADDRESS':str,'LATITUDE':float,'LONGITUDE':float})
+        if spaFiles[s][len(spaFiles[s])-1] == 'x':
+            spaDB[s] = pd.read_excel(spaFiles[s], converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'SUPPORT_ARUG':str,'ADDRESS':str,'LATITUDE':float,'LONGITUDE':float})
+    
+    conDB = [None]*len(conFiles)
+    for c in range(len(conFiles)):
+        if conFiles[c][len(conFiles[c])-1] == 'v':
+            conDB[c] = pd.read_csv(conFiles[c], converters={'Power Supply Name':str,'MAC Address':str,'Street Address':str,'Type':str,'Latitude':float,'Longitude':float})
+        if conFiles[c][len(conFiles[c])-1] == 'x':
+            conDB[c] = pd.read_excel(conFiles[c], converters={'Power Supply Name':str,'MAC Address':str,'Street Address':str,'Type':str,'Latitude':float,'Longitude':float})
+    
+    KeepInput = 0
+    
+    maxRange = 0.00025285
+initializeHelper()
 
 #saves min distance of each blue to any red (lengthy process, only needs to be done once)
 def findClosestReds():
@@ -667,3 +668,6 @@ def sendtoResults():
     
     if warn:
         print('Ignore the warning above')
+
+def scopeTest():
+    print('hi')
