@@ -2,6 +2,7 @@
 """
 Created on Mon Dec 28 13:49:32 2020
 
+add
 """
 import usaddress
 import dataHelper
@@ -30,7 +31,8 @@ maxRange = dataHelper.maxRange
 
 #grouping functions
 #group by name
-
+def nameGroup():#can rename
+    pass
 
 #group by address
 def addressGroup():
@@ -120,7 +122,7 @@ def addressGroup():
                 if parsed[p][1] == 'StreetName':
                     wordCh = ''.join([i for i in parsed[p][0] if not i.isdigit()])
                     if len(wordCh) > 2:
-                        nameHold = wordCh
+                        nameHold = wordCh #=wordCh+nameHold for longer address fields
                         break
                         
             if len(nameHold) > 0:     
@@ -156,7 +158,7 @@ def addressGroup():
             latitude = latB[m]
             longitude = longB[m]
         
-        for m in range(len(membersR)):#for each spatial point in address group
+        for m in range(len(membersR)):#for each continuity point in address group
             color = membersR[m][0]
             index = membersR[m][1]
             originFile = membersR[m][2]
@@ -166,10 +168,42 @@ def addressGroup():
     """
 
 #group by proximity
+def proximityGroup():#can rename
+    pass
+"""
+ideas:
+if a spa is closer to a spa than con, or the other way around, its part of a cluster
 
+if a spa is the closest spa point to multiple con points, or vise versa, mark all involved as part of cluster (point that are not in continuity are at risk)
+^flatten long and lat distance into just distance from the spa point, if closest con point more closer to a con than the spa, add to cluster
+
+any point who's closest point is part of a cluster gets added to the cluster
+"""
 
 
 
 #pairing functions (if spa and cont grouped seperately)
-#
+#takes grouped spatial clusters and adds continuity points if they are involved via proximity
+def Method1(spaGroups):
+    #find local in spa data
+    pairsR = [None]*len(conFiles)         
+    for c in range(len(conFiles)):
+        pairsR[c] = pd.read_csv('closest_pairsR'+str(c)+'.csv')  
+    
+    for g in range(len(spaGroups)):
+        idB = spaGroups[g][index]
+        idBO = spaGroups[g][originFile]
 
+        for i in range(len(pairsR)):
+            locID = pairsR[i].index[(idB[p] == pairsR[i]['Spa Id']) & (idBO[p] == pairsR[i]['Spa Ori'])]
+
+            for m in locID:
+                spaGroups[g][color] = red
+                spaGroups[g][index] = m
+                spaGroups[g][originFile] = i
+                
+    return spaGroups
+
+
+def Method2():#can rename
+    pass
