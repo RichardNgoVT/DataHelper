@@ -171,8 +171,8 @@ def addressGroup():
     """
 
 #group by proximity
-def proximityGroup():#can rename
-#if(True):
+#def proximityGroup():#can rename
+if(True):
     pairsB = [None]*len(spaFiles)         
     for s in range(len(spaFiles)):
         pairsB[s] = pd.read_csv('closest_pairsB'+str(s)+'.csv')
@@ -230,10 +230,10 @@ def proximityGroup():#can rename
                     members[1][c][idR][1].append(math.sqrt(pairsB[s].at[m,'Distance^2']))
     
     pairsHold = [pairsB,pairsR]
-    
+    leaway = 1
     def searchMembers(idC, idP):
         keyPoint[idC[0]][idC[2]][idC[1]] = False
-        baseDist = math.sqrt(pairsHold[idC[0]][idC[2]].at[idC[1],'Distance^2'])*1.5
+        baseDist = math.sqrt(pairsHold[idC[0]][idC[2]].at[idC[1],'Distance^2'])
         
         memInfo = members[idC[0]][idC[2]][idC[1]]
         memID = memInfo[0]
@@ -241,10 +241,27 @@ def proximityGroup():#can rename
         
         memHold = []
         for m in range(len(memID)):
-            if memID[m] != idP and (((memDist[m] - baseDist) <=  baseDist) ):#or len(members[memID[m][0]][memID[m][2]][memID[m][1]][0])==0):
+            if memID[m] != idP and (((memDist[m] - baseDist) <=  baseDist*leaway) ):#or len(members[memID[m][0]][memID[m][2]][memID[m][1]][0])==0):
                 memHold = memHold+searchMembers(memID[m],idC)
         return [idC]+memHold
         
+        
+    def getDist(id1, id2):
+        if id1[0] == 0:
+            lat1 = spaDB[id1[2]].at[id1[1],'LATITUDE']
+            long1 = spaDB[id1[2]].at[id1[1],'LONGITUDE']
+        else:
+            lat1 = conDB[id1[2]].at[id1[1],'Latitude']
+            long1 = conDB[id1[2]].at[id1[1],'Longitude']
+        
+        if id2[0] == 0:
+            lat2 = spaDB[id2[2]].at[id2[1],'LATITUDE']
+            long2 = spaDB[id2[2]].at[id2[1],'LONGITUDE']
+        else:
+            lat2 = conDB[id2[2]].at[id2[1],'Latitude']
+            long2 = conDB[id2[2]].at[id2[1],'Longitude']
+        
+        return math.hypot(lat2-lat1, long2-long1)
         
         
         
@@ -255,7 +272,27 @@ def proximityGroup():#can rename
                 startID = (0,idB,s)
                 clusterHold = searchMembers(startID, startID)
                 if len(clusterHold)>2:
+                    pastlen = 0
+                    currlen = len(clusterHold)
+                    while pastlen != currlen:
+                        break#experimental
+                        pastlen = currlen
+                        for i in range(len(clusterHold)):
+                            baseID = clusterHold[i]
+                            baseDist = math.sqrt(pairsHold[baseID[0]][baseID[2]].at[baseID[1],'Distance^2'])
+                            for j in range(len(clusterHold)):
+                                if i != j:
+                                    tipID = clusterHold[j]
+                                    if baseID[0] == tipID[0]:
+                                        memIDs = members[tipID[0]][tipID[2]][tipID[1]][0]
+                                        for ID in memIDs:
+                                            if ID not in clusterHold and abs(getDist(baseID,ID) - baseDist) <=  baseDist*leaway:
+                                                #clusterHold = clusterHold+searchMembers(ID,ID)
+                                                clusterHold.append(ID)
+                                                #print('added at cluster', len(clusters))
+                        #currlen = len(clusterHold)
                     clusters.append(clusterHold)
+    pastClusterLen = len(clusters)
     
     for c in range(len(members[1])):
         for idR in range(len(members[1][c])):
@@ -263,6 +300,25 @@ def proximityGroup():#can rename
                 startID = (1,idR,c)
                 clusterHold = searchMembers(startID, startID)
                 if len(clusterHold)>2:
+                    pastlen = 0
+                    currlen = len(clusterHold)
+                    while pastlen != currlen:
+                        break#experimental
+                        pastlen = currlen
+                        for i in range(len(clusterHold)):
+                            baseID = clusterHold[i]
+                            baseDist = math.sqrt(pairsHold[baseID[0]][baseID[2]].at[baseID[1],'Distance^2'])
+                            for j in range(len(clusterHold)):
+                                if i != j:
+                                    tipID = clusterHold[j]
+                                    if baseID[0] == tipID[0]:
+                                        memIDs = members[tipID[0]][tipID[2]][tipID[1]][0]
+                                        for ID in memIDs:
+                                            if ID not in clusterHold and abs(getDist(baseID,ID) - baseDist) <=  baseDist*leaway:
+                                                #clusterHold = clusterHold+searchMembers(ID,ID)
+                                                clusterHold.append(ID)
+                                                #print('added at cluster', len(clusters)-pastClusterLen+1)
+                        #currlen = len(clusterHold)
                     clusters.append(clusterHold)
     
     
@@ -292,12 +348,8 @@ def proximityGroup():#can rename
     lineFile.close()
 
     
-    
-    
-    
-    
-    
     clusterDB = pd.DataFrame(columns = ['PS_NETWORK_KEY-Spatial','POWER_SUPPLY_NAME','Continuity PS Name','Mac Address','Latitude','Longitude'])
+    clusterIndex = 1
     for shape in clusters:
         for mem in shape:
             spa_Name = ''
@@ -326,9 +378,9 @@ def proximityGroup():#can rename
             new_row = {'PS_NETWORK_KEY-Spatial':spa_ID,'POWER_SUPPLY_NAME':spa_Name,'Continuity PS Name':con_Name,'Mac Address':con_Mac,'Latitude':ps_Lat,'Longitude':ps_Long}
             clusterDB = clusterDB.append(new_row, ignore_index=True)
         
-        new_row = {'PS_NETWORK_KEY-Spatial':'','POWER_SUPPLY_NAME':'','Continuity PS Name':'','Mac Address':'','Latitude':np.nan,'Longitude':np.nan}
+        new_row = {'PS_NETWORK_KEY-Spatial':str(clusterIndex),'POWER_SUPPLY_NAME':'','Continuity PS Name':'','Mac Address':'','Latitude':np.nan,'Longitude':np.nan}
         clusterDB = clusterDB.append(new_row, ignore_index=True)
-        
+        clusterIndex+=1
     clusterDB.to_excel('clustersFound.xlsx',index=False)
                 
     
