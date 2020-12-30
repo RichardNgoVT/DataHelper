@@ -6,6 +6,9 @@ add
 """
 import usaddress
 import dataHelper
+import pandas as pd
+import numpy as np
+import math
 
 #might be a better way to get global variables...
 dataHelper.initializeHelper()
@@ -169,7 +172,173 @@ def addressGroup():
 
 #group by proximity
 def proximityGroup():#can rename
-    pass
+#if(True):
+    pairsB = [None]*len(spaFiles)         
+    for s in range(len(spaFiles)):
+        pairsB[s] = pd.read_csv('closest_pairsB'+str(s)+'.csv')
+    
+    pairsR = [None]*len(conFiles)         
+    for c in range(len(conFiles)):
+        pairsR[c] = pd.read_csv('closest_pairsR'+str(c)+'.csv')
+        
+    
+    members = [[],[]]
+    keyPoint = [[],[]]
+    for s in range(len(spaDB)):
+        members[0].append([])
+        keyPoint[0].append([])
+        for idB in range(spaDB[s].shape[0]):
+            members[0][s].append([[],[]])
+            keyPoint[0][s].append(False)
+            
+            idR = pairsB[s].at[idB,'Con Id']
+            idRO = int(pairsB[s].at[idB,'Con Ori'])
+            
+            idB2 = pairsR[idRO].at[idR,'Spa Id']
+            idBO2 = pairsR[idRO].at[idR,'Spa Ori']
+                           
+            if idB == idB2 and s == idBO2:
+                keyPoint[0][s][idB] = True
+            
+            for c in range(len(pairsR)):
+                locID = pairsR[c].index[(idB == pairsR[c]['Spa Id']) & (s == pairsR[c]['Spa Ori'])]
+                for m in locID:
+                    members[0][s][idB][0].append((1,m,c))
+                    members[0][s][idB][1].append(math.sqrt(pairsR[c].at[m,'Distance^2']))
+                    
+    for c in range(len(conDB)):
+        members[1].append([])
+        keyPoint[1].append([])
+        for idR in range(conDB[c].shape[0]):
+            members[1][c].append([[],[]])
+            keyPoint[1][c].append(False)
+            
+            idB = pairsR[c].at[idR,'Spa Id']
+            idBO = int(pairsR[c].at[idR,'Spa Ori'])
+            
+            idR2 = pairsB[idBO].at[idB,'Con Id']
+            idRO2 = pairsB[idBO].at[idB,'Con Ori']
+            
+                           
+            if idR == idR2 and c == idRO2:
+                keyPoint[1][c][idR] = True
+            
+            for s in range(len(pairsB)):
+                locID = pairsB[s].index[(idR == pairsB[s]['Con Id']) & (c == pairsB[s]['Con Ori'])]
+                for m in locID:
+                    members[1][c][idR][0].append((0,m,s))
+                    members[1][c][idR][1].append(math.sqrt(pairsB[s].at[m,'Distance^2']))
+    
+    pairsHold = [pairsB,pairsR]
+    
+    def searchMembers(idC, idP):
+        keyPoint[idC[0]][idC[2]][idC[1]] = False
+        baseDist = math.sqrt(pairsHold[idC[0]][idC[2]].at[idC[1],'Distance^2'])*1.5
+        
+        memInfo = members[idC[0]][idC[2]][idC[1]]
+        memID = memInfo[0]
+        memDist = memInfo[1]
+        
+        memHold = []
+        for m in range(len(memID)):
+            if memID[m] != idP and (((memDist[m] - baseDist) <=  baseDist) ):#or len(members[memID[m][0]][memID[m][2]][memID[m][1]][0])==0):
+                memHold = memHold+searchMembers(memID[m],idC)
+        return [idC]+memHold
+        
+        
+        
+        
+    clusters = []
+    for s in range(len(members[0])):
+        for idB in range(len(members[0][s])):
+            if keyPoint[0][s][idB] and len(members[0][s][idB][0])>1:
+                startID = (0,idB,s)
+                clusterHold = searchMembers(startID, startID)
+                if len(clusterHold)>2:
+                    clusters.append(clusterHold)
+    
+    for c in range(len(members[1])):
+        for idR in range(len(members[1][c])):
+            if keyPoint[1][c][idR] and len(members[1][c][idR][0])>1:
+                startID = (1,idR,c)
+                clusterHold = searchMembers(startID, startID)
+                if len(clusterHold)>2:
+                    clusters.append(clusterHold)
+    
+    
+    lineFile = open("clusterChecks.kml", "w+")
+    lineFile.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?><kml xmlns=\"http://earth.google.com/kml/2.0\"><Document>\n")
+    
+    
+    for shape in clusters:
+        baseP = shape[0]
+        if baseP[0] == 0:
+            baseLat = spaDB[baseP[2]].at[baseP[1],'LATITUDE']
+            baseLong = spaDB[baseP[2]].at[baseP[1],'LONGITUDE']
+        else:
+            baseLat = conDB[baseP[2]].at[baseP[1],'Latitude']
+            baseLong = conDB[baseP[2]].at[baseP[1],'Longitude']
+        
+        for s in range(len(shape)-1):
+            tipP = shape[s+1]
+            if tipP[0] == 0:
+                tipLat = spaDB[tipP[2]].at[tipP[1],'LATITUDE']
+                tipLong = spaDB[tipP[2]].at[tipP[1],'LONGITUDE']
+            else:
+                tipLat = conDB[tipP[2]].at[tipP[1],'Latitude']
+                tipLong = conDB[tipP[2]].at[tipP[1],'Longitude']
+            lineFile.write("<Placemark><LineString><coordinates>%f,%f,0.0 %f,%f,0.0</coordinates></LineString><Style><LineStyle><color>#ffff00ff</color><width>1.0</width></LineStyle></Style></Placemark>\n" % (baseLong,baseLat,tipLong,tipLat))
+    lineFile.write("</Document></kml>\n")
+    lineFile.close()
+
+    
+    
+    
+    
+    
+    
+    clusterDB = pd.DataFrame(columns = ['PS_NETWORK_KEY-Spatial','POWER_SUPPLY_NAME','Continuity PS Name','Mac Address','Latitude','Longitude'])
+    for shape in clusters:
+        for mem in shape:
+            spa_Name = ''
+            spa_ID = ''
+            con_Name = ''
+            con_Mac = ''
+            ps_Lat = np.nan
+            ps_Long = np.nan
+        
+        
+            if mem[0] == 0:
+                if 'PS_NETWORK_KEY-Spatial' in spaDB[mem[2]].columns:
+                    spa_ID = spaDB[mem[2]].at[mem[1],'PS_NETWORK_KEY-Spatial']
+                elif 'ID' in spaDB[mem[2]].columns:
+                    spa_ID = spaDB[mem[2]].at[mem[1],'ID']
+                    
+                spa_Name = spaDB[mem[2]].at[mem[1],'POWER_SUPPLY_NAME']
+                ps_Lat = spaDB[mem[2]].at[mem[1],'LATITUDE']
+                ps_Long = spaDB[mem[2]].at[mem[1],'LONGITUDE']
+            else:
+                con_Name = conDB[mem[2]].at[mem[1],'Power Supply Name']
+                con_Mac = conDB[mem[2]].at[mem[1],'MAC Address']
+                ps_Lat = conDB[mem[2]].at[mem[1],'Latitude']
+                ps_Long = conDB[mem[2]].at[mem[1],'Longitude']
+        
+            new_row = {'PS_NETWORK_KEY-Spatial':spa_ID,'POWER_SUPPLY_NAME':spa_Name,'Continuity PS Name':con_Name,'Mac Address':con_Mac,'Latitude':ps_Lat,'Longitude':ps_Long}
+            clusterDB = clusterDB.append(new_row, ignore_index=True)
+        
+        new_row = {'PS_NETWORK_KEY-Spatial':'','POWER_SUPPLY_NAME':'','Continuity PS Name':'','Mac Address':'','Latitude':np.nan,'Longitude':np.nan}
+        clusterDB = clusterDB.append(new_row, ignore_index=True)
+        
+    clusterDB.to_excel('clustersFound.xlsx',index=False)
+                
+    
+    
+                            
+                            
+                    
+                    
+    
+    
 """
 ideas:
 if a spa is closer to a spa than con, or the other way around, its part of a cluster
@@ -178,6 +347,9 @@ if a spa is the closest spa point to multiple con points, or vise versa, mark al
 ^flatten long and lat distance into just distance from the spa point, if closest con point more closer to a con than the spa, add to cluster
 
 any point who's closest point is part of a cluster gets added to the cluster
+
+
+
 """
 
 
