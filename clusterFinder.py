@@ -171,8 +171,8 @@ def addressGroup():
     """
 
 #group by proximity
-#def proximityGroup():#can rename
-if(True):
+def proximityGroup():#can rename
+#if(True):
     pairsB = [None]*len(spaFiles)         
     for s in range(len(spaFiles)):
         pairsB[s] = pd.read_csv('closest_pairsB'+str(s)+'.csv')
@@ -228,9 +228,9 @@ if(True):
                 for m in locID:
                     members[1][c][idR][0].append((0,m,s))
                     members[1][c][idR][1].append(math.sqrt(pairsB[s].at[m,'Distance^2']))
-    
+        
     pairsHold = [pairsB,pairsR]
-    leaway = 1
+    leaway = 1.25
     def searchMembers(idC, idP):
         keyPoint[idC[0]][idC[2]][idC[1]] = False
         baseDist = math.sqrt(pairsHold[idC[0]][idC[2]].at[idC[1],'Distance^2'])
@@ -246,36 +246,47 @@ if(True):
         return [idC]+memHold
         
         
-    def getDist(id1, id2):
-        if id1[0] == 0:
-            lat1 = spaDB[id1[2]].at[id1[1],'LATITUDE']
-            long1 = spaDB[id1[2]].at[id1[1],'LONGITUDE']
+    def getCords(ID):
+        if ID[0] == 0:
+           lat = spaDB[ID[2]].at[ID[1],'LATITUDE']
+           long = spaDB[ID[2]].at[ID[1],'LONGITUDE']
         else:
-            lat1 = conDB[id1[2]].at[id1[1],'Latitude']
-            long1 = conDB[id1[2]].at[id1[1],'Longitude']
-        
-        if id2[0] == 0:
-            lat2 = spaDB[id2[2]].at[id2[1],'LATITUDE']
-            long2 = spaDB[id2[2]].at[id2[1],'LONGITUDE']
-        else:
-            lat2 = conDB[id2[2]].at[id2[1],'Latitude']
-            long2 = conDB[id2[2]].at[id2[1],'Longitude']
-        
-        return math.hypot(lat2-lat1, long2-long1)
+           lat = conDB[ID[2]].at[ID[1],'Latitude']
+           long = conDB[ID[2]].at[ID[1],'Longitude']
+       
+        return (lat,long)
         
         
-        
+    def getDist(cords1, cords2):
+        latDist = cords2[0]-cords1[0]
+        longDist = cords2[1]-cords1[1]
+        return math.hypot(latDist, longDist)
+    
+    def getUV(cords1, cords2):
+        latDist = cords2[0]-cords1[0]
+        longDist = cords2[1]-cords1[1]
+        magnitude = math.hypot(latDist, longDist)
+        return (latDist/magnitude,longDist/magnitude)
+    
+    def getDot(cords1,cords2):
+        return cords1[0]*cords2[0]+cords1[1]*cords2[1]
+    
     clusters = []
-    for s in range(len(members[0])):
-        for idB in range(len(members[0][s])):
-            if keyPoint[0][s][idB] and len(members[0][s][idB][0])>1:
-                startID = (0,idB,s)
+    for d in range(len(spaDB)+len(conDB)):
+        if d < len(spaDB):
+            c = 0
+        else:
+            c = 1
+        f = d-c*len(spaDB)
+        for m in range(len(members[c][f])):
+            if keyPoint[c][f][m] and len(members[c][f][m][0])>1:
+                startID = (c,m,f)
                 clusterHold = searchMembers(startID, startID)
                 if len(clusterHold)>2:
                     pastlen = 0
                     currlen = len(clusterHold)
                     while pastlen != currlen:
-                        break#experimental
+                        #break#experimental
                         pastlen = currlen
                         for i in range(len(clusterHold)):
                             baseID = clusterHold[i]
@@ -286,41 +297,20 @@ if(True):
                                     if baseID[0] == tipID[0]:
                                         memIDs = members[tipID[0]][tipID[2]][tipID[1]][0]
                                         for ID in memIDs:
-                                            if ID not in clusterHold and abs(getDist(baseID,ID) - baseDist) <=  baseDist*leaway:
-                                                #clusterHold = clusterHold+searchMembers(ID,ID)
-                                                clusterHold.append(ID)
-                                                #print('added at cluster', len(clusters))
-                        #currlen = len(clusterHold)
+                                            if ID not in clusterHold and abs(getDist(getCords(baseID),getCords(ID)) - baseDist) <=  baseDist*leaway:
+                                                checkDir = getUV(getCords(baseID),getCords(tipID))
+                                                if getDot(checkDir,getCords(tipID)) > getDot(checkDir,getCords(ID)):
+                                                    clusterHold = clusterHold+searchMembers(ID,ID)
+                                                    print('added at cluster', len(clusters), getCords(clusterHold[0]))
+                                            betweenDist = getDist(getCords(baseID),getCords(tipID))
+                                            if ID not in clusterHold and abs(getDist(getCords(baseID),getCords(ID)) - betweenDist) <=  betweenDist:
+                                                checkDir = getUV(getCords(baseID),getCords(tipID))
+                                                if getDot(checkDir,getCords(tipID)) > getDot(checkDir,getCords(ID)) and getDot(checkDir,getCords(baseID)) < getDot(checkDir,getCords(ID)):
+                                                    clusterHold = clusterHold+searchMembers(ID,ID)
+                                                    print('added at cluster V2', len(clusters), getCords(clusterHold[0]))
+                                                    
+                        currlen = len(clusterHold)
                     clusters.append(clusterHold)
-    pastClusterLen = len(clusters)
-    
-    for c in range(len(members[1])):
-        for idR in range(len(members[1][c])):
-            if keyPoint[1][c][idR] and len(members[1][c][idR][0])>1:
-                startID = (1,idR,c)
-                clusterHold = searchMembers(startID, startID)
-                if len(clusterHold)>2:
-                    pastlen = 0
-                    currlen = len(clusterHold)
-                    while pastlen != currlen:
-                        break#experimental
-                        pastlen = currlen
-                        for i in range(len(clusterHold)):
-                            baseID = clusterHold[i]
-                            baseDist = math.sqrt(pairsHold[baseID[0]][baseID[2]].at[baseID[1],'Distance^2'])
-                            for j in range(len(clusterHold)):
-                                if i != j:
-                                    tipID = clusterHold[j]
-                                    if baseID[0] == tipID[0]:
-                                        memIDs = members[tipID[0]][tipID[2]][tipID[1]][0]
-                                        for ID in memIDs:
-                                            if ID not in clusterHold and abs(getDist(baseID,ID) - baseDist) <=  baseDist*leaway:
-                                                #clusterHold = clusterHold+searchMembers(ID,ID)
-                                                clusterHold.append(ID)
-                                                #print('added at cluster', len(clusters)-pastClusterLen+1)
-                        #currlen = len(clusterHold)
-                    clusters.append(clusterHold)
-    
     
     lineFile = open("clusterChecks.kml", "w+")
     lineFile.write("<?xml version=\"1.0\" encoding=\"UTF-8\"?><kml xmlns=\"http://earth.google.com/kml/2.0\"><Document>\n")
@@ -349,6 +339,8 @@ if(True):
 
     
     clusterDB = pd.DataFrame(columns = ['PS_NETWORK_KEY-Spatial','POWER_SUPPLY_NAME','Continuity PS Name','Mac Address','Latitude','Longitude'])
+    new_row = {'PS_NETWORK_KEY-Spatial':str(0),'POWER_SUPPLY_NAME':'','Continuity PS Name':'','Mac Address':'','Latitude':np.nan,'Longitude':np.nan}
+    clusterDB = clusterDB.append(new_row, ignore_index=True)
     clusterIndex = 1
     for shape in clusters:
         for mem in shape:
