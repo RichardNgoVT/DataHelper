@@ -171,7 +171,7 @@ def addressGroup():
     """
 
 #group by proximity
-def proximityGroup():#can rename
+def proximityGroup():
 #if(True):
     pairsB = [None]*len(spaFiles)         
     for s in range(len(spaFiles)):
@@ -245,7 +245,6 @@ def proximityGroup():#can rename
                 memHold = memHold+searchMembers(memID[m],idC)
         return [idC]+memHold
         
-        
     def getCords(ID):
         if ID[0] == 0:
            lat = spaDB[ID[2]].at[ID[1],'LATITUDE']
@@ -255,7 +254,6 @@ def proximityGroup():#can rename
            long = conDB[ID[2]].at[ID[1],'Longitude']
        
         return (lat,long)
-        
         
     def getDist(cords1, cords2):
         latDist = cords2[0]-cords1[0]
@@ -287,27 +285,52 @@ def proximityGroup():#can rename
                     currlen = len(clusterHold)
                     while pastlen != currlen:
                         #break#experimental
+                        spaCount = sum([cluster[0]==0 for cluster in clusterHold])
+                        conCount = sum([cluster[0]==1 for cluster in clusterHold])
+                        if spaCount == conCount:
+                            break
+                        elif spaCount>conCount:
+                            majority = 0
+                        else:
+                            majority = 1
                         pastlen = currlen
                         for i in range(len(clusterHold)):
                             baseID = clusterHold[i]
+                            if baseID[0] != majority:
+                                continue
                             baseDist = math.sqrt(pairsHold[baseID[0]][baseID[2]].at[baseID[1],'Distance^2'])
                             for j in range(len(clusterHold)):
+                                if spaCount == conCount:
+                                    break
                                 if i != j:
                                     tipID = clusterHold[j]
                                     if baseID[0] == tipID[0]:
                                         memIDs = members[tipID[0]][tipID[2]][tipID[1]][0]
+                                        
+                                        dists = []
                                         for ID in memIDs:
-                                            if ID not in clusterHold and abs(getDist(getCords(baseID),getCords(ID)) - baseDist) <=  baseDist*leaway:
+                                            dists.append(getDist(getCords(baseID),getCords(ID)))
+                                        ordIDs = np.argsort(dists)
+                                        for oID in ordIDs:
+                                            if spaCount == conCount:
+                                                break
+                                            ID = memIDs[oID]
+                                            minDist = dists[oID]
+                                            if ID not in clusterHold and abs(minDist - baseDist) <=  baseDist*leaway:
                                                 checkDir = getUV(getCords(baseID),getCords(tipID))
-                                                if getDot(checkDir,getCords(tipID)) > getDot(checkDir,getCords(ID)):
+                                                if getDot(checkDir,getCords(tipID)) > getDot(checkDir,getCords(ID)) or True:
                                                     clusterHold = clusterHold+searchMembers(ID,ID)
+                                                    spaCount+=majority
+                                                    conCount+=(majority+1)%2
                                                     print('added at cluster', len(clusters), getCords(clusterHold[0]))
                                             betweenDist = getDist(getCords(baseID),getCords(tipID))
-                                            if ID not in clusterHold and abs(getDist(getCords(baseID),getCords(ID)) - betweenDist) <=  betweenDist:
+                                            if ID not in clusterHold and abs(minDist - betweenDist) <=  betweenDist:
                                                 checkDir = getUV(getCords(baseID),getCords(tipID))
                                                 if getDot(checkDir,getCords(tipID)) > getDot(checkDir,getCords(ID)) and getDot(checkDir,getCords(baseID)) < getDot(checkDir,getCords(ID)):
                                                     clusterHold = clusterHold+searchMembers(ID,ID)
-                                                    print('added at cluster V2', len(clusters), getCords(clusterHold[0]))
+                                                    spaCount+=majority
+                                                    conCount+=(majority+1)%2
+                                                    print('V2 added at cluster', len(clusters), getCords(clusterHold[0]))
                                                     
                         currlen = len(clusterHold)
                     clusters.append(clusterHold)
@@ -378,23 +401,12 @@ def proximityGroup():#can rename
     
     
                             
-                            
-                    
+def proximityGroup2():
+    pass        
                     
     
     
-"""
-ideas:
-if a spa is closer to a spa than con, or the other way around, its part of a cluster
 
-if a spa is the closest spa point to multiple con points, or vise versa, mark all involved as part of cluster (point that are not in continuity are at risk)
-^flatten long and lat distance into just distance from the spa point, if closest con point more closer to a con than the spa, add to cluster
-
-any point who's closest point is part of a cluster gets added to the cluster
-
-
-
-"""
 
 
 
