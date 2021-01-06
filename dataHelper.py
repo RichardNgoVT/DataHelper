@@ -22,6 +22,7 @@ def initializeHelper():
     global conDB
     global KeepInput
     global maxRange
+    global checkInputFile
     
     #Settings
     
@@ -36,11 +37,12 @@ def initializeHelper():
     #conFiles_KS = ['Keystone Continuity 1 - Red v2.xlsx','Keystone Continuity 2 - Red v2.xlsx']
     #spaFiles_TW = ['Twin Cities Spatial 1 - Blue.csv','Twin Cities Spatial  2- Blue.csv','Twin Cities KS MO Spacial - Blue.csv']
     #conFiles_TW = ['Twin Cities Continuity - Red.xlsx','Twin Cities Continuity - Red 2.xlsx']
-    spaFiles_MW = ['MtnWest Spatial 1 - Blue.csv','MtnWest Spatial 2 - Blue.csv','MtnWest Spatial 3 - Blue.csv','MtnWest Spatial 4 - Blue.csv']
-    conFiles_MW = ['MtnWest Continuity 1 - Red.xlsx','MtnWest Continuity 2 - Red.xlsx','MtnWest Continuity 3 - Red.xlsx','MtnWest Continuity 4 - Red.xlsx']
-    
-    spaFiles = spaFiles_MW
-    conFiles = conFiles_MW
+    #spaFiles_MW = ['MtnWest Spatial 1 - Blue.csv','MtnWest Spatial 2 - Blue.csv','MtnWest Spatial 3 - Blue.csv','MtnWest Spatial 4 - Blue.csv']
+    #conFiles_MW = ['MtnWest Continuity 1 - Red.xlsx','MtnWest Continuity 2 - Red.xlsx','MtnWest Continuity 3 - Red.xlsx','MtnWest Continuity 4 - Red.xlsx']
+    spaFiles_HL = ['Heartland Spatial 1 - Blue.csv','Heartland Spatial 2 - Blue.csv','Heartland Spatial 3 - Blue.csv','Heartland Spatial 4 - Blue.csv']
+    conFiles_HL = ['Heartland Continuity 1 - Red .csv','Heartland Continuity 2 - Red .csv','Heartland Continuity 3 - Red .csv']
+    spaFiles = spaFiles_HL
+    conFiles = conFiles_HL
     
     myDB =  pd.read_excel(myFile, converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'Continuity PS Name':str,'Mac Address':str,'Good Latitude':float,'Good Longitude':float,'Status':str,'Comment':str})
     
@@ -61,6 +63,8 @@ def initializeHelper():
     KeepInput = 0
     
     maxRange = 0.00025285
+    
+    checkInputFile = True
 initializeHelper()
 
 #saves min distance of each blue to any red (lengthy process, only needs to be done once)
@@ -669,5 +673,59 @@ def sendtoResults():
     if warn:
         print('Ignore the warning above')
 
-def scopeTest():
-    print('hi')
+#checks if dataset was filled out correctly
+def dataSetCheck():
+    def isfloat(value):
+        try:
+            float(value)
+            return True
+        except:
+            return False
+    
+    badCords = []
+    emptyRows = []
+    inconsitent = []
+    
+    myDBChk =  pd.read_excel(myFile, converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'Continuity PS Name':str,'Mac Address':str,'Good Latitude':str,'Good Longitude':str,'Status':str,'Comment':str})
+    myDBChk = myDBChk.replace(r'^\s*$', np.nan, regex=True)
+    
+    badCords = np.where(((pd.isna(myDBChk['Good Latitude'])) ^ (pd.isna(myDBChk['Good Longitude']))) | ~(myDBChk['Good Latitude'].apply(isfloat)) | ~(myDBChk['Good Longitude'].apply(isfloat)))[0]
+    
+    filledRows = np.where((pd.notna(myDBChk['Status'])) | (pd.notna(myDBChk['Good Latitude']) & pd.isna(myDBChk['Good Longitude'])))[0]
+    if len(filledRows)>0:
+        mask = np.full(len(myDBChk['Status']),False)
+        for i in range(0,filledRows[len(filledRows)-1]):
+            mask[i] = True
+        emptyRows = np.where(mask & (pd.isna(myDBChk['Status'])) & (pd.isna(myDBChk['Good Latitude']) | pd.isna(myDBChk['Good Longitude'])))[0]
+        if len(emptyRows) > 0:
+            print('Nothing filled in at rows:', emptyRows+2)
+    
+    if checkInputFile:
+        inputCSV = pd.read_csv('input.csv', converters={'Id_Info':str,'Comment':str,'New Name':str,'New Mac':str})
+        inputCSV = inputCSV.replace(r'^\s*$', np.nan, regex=True)
+        
+        filledRows = np.where((pd.notna(inputCSV['Case'])) | (pd.notna(inputCSV['New Lat']) & pd.isna(inputCSV['New Long'])))[0]
+        if len(filledRows)>0:
+            mask = np.full(len(inputCSV['Case']),False)
+            for i in range(0,filledRows[len(filledRows)-1]):
+                mask[i] = True
+            emptyRows = np.where(mask & (pd.isna(inputCSV['Case'])) & (pd.isna(inputCSV['New Lat']) | pd.isna(inputCSV['New Long'])))[0]
+            if len(emptyRows) > 0:
+                print('Nothing filled in input file at rows:', emptyRows+2)
+    
+    if len(badCords) == 0:
+        if checkInputFile:
+            myDB =  pd.read_excel(myFile, converters={'PS_NETWORK_KEY-Spatial':str,'POWER_SUPPLY_NAME':str,'Continuity PS Name':str,'Mac Address':str,'Good Latitude':float,'Good Longitude':float,'Status':str,'Comment':str})
+            myDB = myDB.replace(r'^\s*$', np.nan, regex=True)
+            inputCSV = pd.read_csv('input.csv', converters={'Id_Info':str,'Comment':str,'New Name':str,'New Mac':str})
+            inputCSV = inputCSV.replace(r'^\s*$', np.nan, regex=True)
+            inconsitent = np.where((abs(myDB['Good Latitude'] - inputCSV['New Lat']) > 0.0001) | ((pd.isna(myDB['Good Latitude'])) ^ (pd.isna(inputCSV['New Lat']))) | (abs(myDB['Good Longitude'] - inputCSV['New Long']) > 0.0001) | ((pd.isna(myDB['Good Longitude'])) ^ (pd.isna(inputCSV['New Long']))) | ((myDB['Continuity PS Name'] != inputCSV['New Name']) & (myDB['Continuity PS Name'].notna() | inputCSV['New Name'].notna())) | ((myDB['Mac Address'] != inputCSV['New Mac']) & (myDB['Mac Address'].notna() | inputCSV['New Mac'].notna())))[0]
+            if len(inconsitent) > 0:
+                print('Inconsitent with input file at rows:', inconsitent+2)
+    else:
+        print('Bad coordinate at rows:', shifted+2)
+    
+    if len(badCords) == 0 and len(emptyRows) == 0 and len(inconsitent) == 0:
+        print('Datasheet filled correctly')
+    
+        
